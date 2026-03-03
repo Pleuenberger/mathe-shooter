@@ -197,7 +197,7 @@ class MathScene extends Phaser.Scene {
       this._handleInput('←');
     } else if (key === 'Enter') {
       this._handleInput('OK');
-    } else if (key === 'q' || key === 'Q') {
+    } else if (key === 'q' || key === 'Q' || key === '5') {
       this._activateShield();
     }
   }

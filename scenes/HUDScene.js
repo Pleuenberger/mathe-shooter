@@ -79,7 +79,7 @@ class HUDScene extends Phaser.Scene {
     this.shieldIcon = this.add.image(635, 508, 'shield_item')
       .setScrollFactor(0).setDepth(11).setVisible(false);
 
-    this.add.text(613, 527, STRINGS.SHIELD_SLOT, {
+    this.add.text(613, 527, '5  ' + STRINGS.SHIELD_SLOT, {
       fontSize: '9px',
       fill: '#aaaaaa',
     }).setScrollFactor(0).setDepth(11);

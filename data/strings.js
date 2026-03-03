@@ -29,7 +29,7 @@ window.STRINGS = {
   MATH_WRONG: 'Leider falsch...',
   MATH_TIMEOUT: 'Zeit abgelaufen!',
   MATH_SHIELD_PROMPT: 'Schild aktivieren?',
-  MATH_SHIELD_BTN: 'Schild nutzen (Q)',
+  MATH_SHIELD_BTN: 'Schild nutzen [5]',
   MATH_COUNTDOWN: '{s}s',
 
   // Chests

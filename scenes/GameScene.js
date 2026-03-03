@@ -15,6 +15,11 @@ class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // Reset stale per-run reference so getEnemyGroup() creates a fresh group
+    // for this scene instance.  Without this, the second level run reuses the
+    // destroyed group from the previous scene and crashes silently.
+    this._enemyPhysicsGroup = null;
+
     // 1. Init systems for this level
     MathSystem.initForLevel(this._levelConfig);
     InventorySystem.init();
@@ -342,23 +347,24 @@ class GameScene extends Phaser.Scene {
       this._playerTouchBoss, null, this
     );
 
-    // Spawn shield items before the boss area so the player can pick them up
-    const shieldY = Math.min(bp.y - 10, 460);
-    const woodShield = new ShieldItem(this, bp.x - 600, shieldY, {
-      id: 'wood_shield',
-      name: 'Holzschild',
-      protection: 0.5,
-    });
-    this.shieldItems.push(woodShield);
+    // Spawn hard math chests that reward shields near the boss area.
+    // Players must solve a 6er–9er problem (category 'hard') to earn the shield.
+    const shieldChestY = Math.min(bp.y - 10, 400);
+
+    const chestWood      = new MathChest(this, bp.x - 600, shieldChestY, 'hard');
+    chestWood.rewardType = 'shield';
+    chestWood.shieldTier = 1; // wood shield: 50% protection
+    this.chests.push(chestWood);
 
     if (this.levelId >= 5) {
-      const steelShield = new ShieldItem(this, bp.x - 350, shieldY, {
-        id: 'steel_shield',
-        name: 'Stahlschild',
-        protection: 0.75,
-      });
-      this.shieldItems.push(steelShield);
+      const chestSteel      = new MathChest(this, bp.x - 350, shieldChestY, 'hard');
+      chestSteel.rewardType = 'shield';
+      chestSteel.shieldTier = 2; // steel shield: 75% protection
+      this.chests.push(chestSteel);
     }
+
+    // Update star-calculation total to include the shield chests
+    this._chestsTotal = this.chests.length;
 
     // Boss announcement banner
     const bossText = this.add.text(480, 200, '⚠ BOSS ⚠', {
@@ -518,22 +524,38 @@ class GameScene extends Phaser.Scene {
         this.player.heal(CONSTANTS.HP_REGEN_SLOW);
       }
 
-      // Spawn weapon from the chest's tier pool
+      // Spawn reward from the chest
       if (this._pendingChest) {
-        const category = this._pendingChest.category;
-        const tier     = category === 'easy' ? 1 : category === 'medium' ? 2 : 3;
-        const pool     = WEAPON_POOLS[tier];
-        const weaponId = pool[Phaser.Math.Between(0, pool.length - 1)];
-        const weaponData = { ...WEAPONS[weaponId] };
+        if (this._pendingChest.rewardType === 'shield') {
+          const tier2     = this._pendingChest.shieldTier >= 2;
+          const shieldCfg = {
+            id:         tier2 ? 'steel_shield' : 'wood_shield',
+            name:       tier2 ? 'Stahlschild'  : 'Holzschild',
+            protection: tier2 ? 0.75 : 0.5,
+          };
+          const shield = new ShieldItem(
+            this,
+            this._pendingChest.x,
+            this._pendingChest.y - 60,
+            shieldCfg
+          );
+          this.shieldItems.push(shield);
+        } else {
+          const category  = this._pendingChest.category;
+          const tier      = category === 'easy' ? 1 : category === 'medium' ? 2 : 3;
+          const pool      = WEAPON_POOLS[tier];
+          const weaponId  = pool[Phaser.Math.Between(0, pool.length - 1)];
+          const weaponData = { ...WEAPONS[weaponId] };
 
-        const item = new WeaponItem(
-          this,
-          this._pendingChest.x,
-          this._pendingChest.y - 60,
-          weaponData
-        );
-        this.weaponItems.push(item);
-        EventBus.emit('WEAPON_UNLOCKED', weaponData);
+          const item = new WeaponItem(
+            this,
+            this._pendingChest.x,
+            this._pendingChest.y - 60,
+            weaponData
+          );
+          this.weaponItems.push(item);
+          EventBus.emit('WEAPON_UNLOCKED', weaponData);
+        }
       }
     }
 

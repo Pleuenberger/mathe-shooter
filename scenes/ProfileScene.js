@@ -138,6 +138,24 @@ class ProfileScene extends Phaser.Scene {
     const hitZone = this.add.rectangle(cx + cardW / 2, cy + cardH / 2, cardW, cardH, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
 
+    // Visible delete button (✕) at top-right of card
+    let _deletePressed = false;
+    const delBg = this.add.rectangle(cx + cardW - 16, cy + 16, 28, 28, 0x882222, 1)
+      .setInteractive({ useHandCursor: true });
+    const delTxt = this.add.text(cx + cardW - 16, cy + 16, '✕', {
+      fontSize: '14px',
+      fill: '#ffffff',
+      stroke: '#000',
+      strokeThickness: 2,
+    }).setOrigin(0.5);
+
+    delBg.on('pointerover', () => delBg.setFillStyle(0xcc3333));
+    delBg.on('pointerout',  () => delBg.setFillStyle(0x882222));
+    delBg.on('pointerdown', () => {
+      _deletePressed = true;
+      this._showDeleteConfirm(profile);
+    });
+
     // ── interaction ──────────────────────────────────────────
     hitZone.on('pointerover', () => bg.setFillStyle(0x333366));
     hitZone.on('pointerout',  () => {
@@ -145,9 +163,10 @@ class ProfileScene extends Phaser.Scene {
       this._clearHoldTimer();
     });
 
-    // Click → select profile
+    // Click → select profile (unless delete button was pressed)
     hitZone.on('pointerup', () => {
       this._clearHoldTimer();
+      if (_deletePressed) { _deletePressed = false; return; }
       ProfileSystem.setActive(profile.id);
       this.scene.start('MenuScene');
     });
@@ -159,7 +178,7 @@ class ProfileScene extends Phaser.Scene {
       });
     });
 
-    this._cardContainer.add([bg, avatar, nameText, lvText, starsText, livesText, colorDot, hitZone]);
+    this._cardContainer.add([bg, avatar, nameText, lvText, starsText, livesText, colorDot, hitZone, delBg, delTxt]);
   }
 
   // ─────────────────────────────────────────────────────────────

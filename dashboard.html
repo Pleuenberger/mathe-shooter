@@ -63,7 +63,25 @@
     .header {
       text-align: center;
       margin-bottom: 28px;
+      position: relative;
     }
+
+    .back-btn {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-block;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.2); }
 
     .header h1 {
       font-size: clamp(1.8rem, 5vw, 2.8rem);
@@ -439,6 +457,7 @@
        HEADER
        ============================================================ -->
   <header class="header">
+    <a href="index.html" class="back-btn">← Zum Spiel</a>
     <h1>🧮 MATHE-SHERIFF – Lernstand</h1>
     <p class="subtitle">Lernfortschritt-Dashboard für Eltern</p>
   </header>
