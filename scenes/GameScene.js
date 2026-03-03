@@ -106,6 +106,7 @@ class GameScene extends Phaser.Scene {
       k2: Phaser.Input.Keyboard.KeyCodes.TWO,
       k3: Phaser.Input.Keyboard.KeyCodes.THREE,
       k4: Phaser.Input.Keyboard.KeyCodes.FOUR,
+      k5: Phaser.Input.Keyboard.KeyCodes.FIVE,
     });
 
     // 13. Physics colliders
@@ -133,17 +134,16 @@ class GameScene extends Phaser.Scene {
     this._showLevelIntro();
 
     // 19. Math scene open state
-    this._mathOpen       = false;
-    this._pendingChest   = null;
-    this._shieldActive   = false;
-    this._shieldProtection = 0;
+    this._mathOpen     = false;
+    this._pendingChest = null;
+    this._shieldActive = false;
+    this._shieldTimer  = null;
 
     // 20. Wind effect (level 8)
     this._windDrift = this._levelConfig.windDrift || 0;
 
     // Track second half damage
     EventBus.on('PLAYER_HP_CHANGED', this._trackSecondHalfDamage, this);
-    EventBus.on('SHIELD_ACTIVATED',  this._onShieldActivated,     this);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -431,27 +431,15 @@ class GameScene extends Phaser.Scene {
 
   _bulletHitPlayer(player, bullet) {
     if (!bullet.active || !bullet.isEnemyBullet) return;
+    if (this._shieldActive) { bullet.deactivate(); return; }
     bullet.deactivate();
-
-    let dmg = bullet.damage || CONSTANTS.DAMAGE_STRONG_PROJECTILE;
-
-    if (this._mathOpen && this._shieldActive) {
-      dmg = Math.floor(dmg * (1 - this._shieldProtection));
-    }
-
-    player.takeDamage(dmg);
+    player.takeDamage(bullet.damage || CONSTANTS.DAMAGE_STRONG_PROJECTILE);
   }
 
   _playerTouchEnemy(player, enemy) {
     if (!enemy.isAlive || player._invincible) return;
-
-    let dmg = CONSTANTS.DAMAGE_BASIC_ENEMY;
-
-    if (this._mathOpen && this._shieldActive) {
-      dmg = Math.floor(dmg * (1 - this._shieldProtection));
-    }
-
-    player.takeDamage(dmg);
+    if (this._shieldActive) return;
+    player.takeDamage(CONSTANTS.DAMAGE_BASIC_ENEMY);
     player._invincible = true;
     this.time.delayedCall(1000, () => {
       if (player.active) player._invincible = false;
@@ -460,15 +448,10 @@ class GameScene extends Phaser.Scene {
 
   _playerTouchBoss(player, boss) {
     if (!boss.isAlive || player._invincible) return;
-
-    let dmg = (boss.phase === 3)
+    if (this._shieldActive) return;
+    const dmg = (boss.phase === 3)
       ? CONSTANTS.DAMAGE_BOSS_CONTACT
       : CONSTANTS.DAMAGE_BOSS_PROJECTILE;
-
-    if (this._mathOpen && this._shieldActive) {
-      dmg = Math.floor(dmg * (1 - this._shieldProtection));
-    }
-
     player.takeDamage(dmg);
     player._invincible = true;
     this.time.delayedCall(1500, () => {
@@ -501,16 +484,26 @@ class GameScene extends Phaser.Scene {
   // ─────────────────────────────────────────────────────────────
   // EventBus handlers
   // ─────────────────────────────────────────────────────────────
-  _onShieldActivated(data) {
-    this._shieldActive     = true;
-    this._shieldProtection = data.protection || 0.5;
-    // Shield clears after the math scene closes (handled in _onMathResult)
+  _activateShieldManual() {
+    if (this._mathOpen) return;
+    if (this._shieldActive) return;
+    if (!InventorySystem.shieldSlot) return;
+    const shield = InventorySystem.useShield();
+    if (!shield) return;
+    this._shieldActive = true;
+    if (this.player && this.player.active) this.player.setTint(0x4488ff);
+    if (this._shieldTimer) this._shieldTimer.remove(false);
+    this._shieldTimer = this.time.delayedCall(5000, () => this._deactivateShield());
+  }
+
+  _deactivateShield() {
+    this._shieldActive = false;
+    if (this.player && this.player.active) this.player.clearTint();
+    if (this._shieldTimer) { this._shieldTimer.remove(false); this._shieldTimer = null; }
   }
 
   _onMathResult(data) {
-    this._mathOpen         = false;
-    this._shieldActive     = false;
-    this._shieldProtection = 0;
+    this._mathOpen = false;
 
     if (data.correct) {
       this._chestsCorrect++;
@@ -762,6 +755,7 @@ class GameScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keys.k2)) InventorySystem.switchTo(1);
     if (Phaser.Input.Keyboard.JustDown(this.keys.k3)) InventorySystem.switchTo(2);
     if (Phaser.Input.Keyboard.JustDown(this.keys.k4)) InventorySystem.switchTo(3);
+    if (Phaser.Input.Keyboard.JustDown(this.keys.k5)) this._activateShieldManual();
 
     // Tutorial update
     if (this._levelConfig.tutorial) this._updateTutorial();
@@ -865,13 +859,18 @@ class GameScene extends Phaser.Scene {
 
     AudioSystem.chestOpen();
 
-    const problem = MathSystem.generateProblem(chest.category);
+    let problem;
+    if (chest.rewardType === 'shield') {
+      // Shield chests always use rows 6-9, multipliers 2-9 (no ×1 or ×10)
+      const shieldRows = [6, 7, 8, 9];
+      const row = shieldRows[Math.floor(Math.random() * shieldRows.length)];
+      const m   = Math.floor(Math.random() * 8) + 2; // 2–9
+      problem = { a: row, b: m, answer: row * m, tableRow: row, category: 'hard' };
+    } else {
+      problem = MathSystem.generateProblem(chest.category);
+    }
 
-    this.scene.launch('MathScene', {
-      problem,
-      hasShield:  InventorySystem.shieldSlot !== null,
-      shieldData: InventorySystem.shieldSlot,
-    });
+    this.scene.launch('MathScene', { problem });
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -922,6 +921,6 @@ class GameScene extends Phaser.Scene {
     EventBus.off('BOSS_IMMUNE',        this._onBossImmune,           this);
     EventBus.off('BOSS_PHASE_CHANGED', this._onBossPhase,            this);
     EventBus.off('PLAYER_HP_CHANGED',  this._trackSecondHalfDamage,  this);
-    EventBus.off('SHIELD_ACTIVATED',   this._onShieldActivated,      this);
+    if (this._shieldTimer) { this._shieldTimer.remove(false); this._shieldTimer = null; }
   }
 }

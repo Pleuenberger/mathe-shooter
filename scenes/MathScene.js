@@ -2,8 +2,7 @@
 // scenes/MathScene.js - Mathe-Shooter
 // Math challenge overlay launched in parallel with GameScene.
 //
-// Receives: { problem: { a, b, answer, tableRow, category },
-//             hasShield, shieldData }
+// Receives: { problem: { a, b, answer, tableRow, category } }
 //
 // Layout:
 //   - Dark semi-transparent overlay
@@ -11,7 +10,6 @@
 //   - Answer display field
 //   - Countdown bar (5 seconds)
 //   - Numpad (7 8 9 / 4 5 6 / 1 2 3 / ← 0 OK)
-//   - Optional "Schild nutzen (Q)" button
 // =============================================================
 
 class MathScene extends Phaser.Scene {
@@ -20,9 +18,7 @@ class MathScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.problem    = data.problem;   // { a, b, answer, tableRow, category }
-    this.hasShield  = data.hasShield  || false;
-    this.shieldData = data.shieldData || null;
+    this.problem = data.problem;   // { a, b, answer, tableRow, category }
   }
 
   create() {
@@ -82,15 +78,6 @@ class MathScene extends Phaser.Scene {
     // ── Numpad ───────────────────────────────────────────────────
     this._buildNumpad();
 
-    // ── Shield button ────────────────────────────────────────────
-    this._shieldUsed   = false;
-    this._shieldBtnBg  = null;
-    this._shieldBtnTxt = null;
-
-    if (this.hasShield) {
-      this._buildShieldButton();
-    }
-
     // ── Keyboard input ───────────────────────────────────────────
     this.input.keyboard.on('keydown', this._onKey, this);
 
@@ -148,43 +135,6 @@ class MathScene extends Phaser.Scene {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // _buildShieldButton
-  // ─────────────────────────────────────────────────────────────
-  _buildShieldButton() {
-    this._shieldBtnBg = this.add.rectangle(480, 428, 250, 38, 0x886600)
-      .setScrollFactor(0).setDepth(92).setInteractive({ useHandCursor: true });
-
-    this._shieldBtnTxt = this.add.text(480, 428, STRINGS.MATH_SHIELD_BTN, {
-      fontSize: '14px',
-      fill: '#ffcc00',
-      stroke: '#000',
-      strokeThickness: 2,
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(93);
-
-    this._shieldBtnBg.on('pointerdown', () => this._activateShield());
-    this._shieldBtnBg.on('pointerover', () => this._shieldBtnBg.setFillStyle(0xaa8800));
-    this._shieldBtnBg.on('pointerout',  () => {
-      if (!this._shieldUsed) this._shieldBtnBg.setFillStyle(0x886600);
-    });
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // _activateShield
-  // ─────────────────────────────────────────────────────────────
-  _activateShield() {
-    if (this._shieldUsed) return;
-    this._shieldUsed = true;
-
-    const shield = InventorySystem.useShield();
-    if (shield) {
-      EventBus.emit('SHIELD_ACTIVATED', { protection: shield.protection });
-    }
-
-    if (this._shieldBtnBg)  this._shieldBtnBg.setFillStyle(0x338800);
-    if (this._shieldBtnTxt) this._shieldBtnTxt.setText('Schild aktiv!');
-  }
-
-  // ─────────────────────────────────────────────────────────────
   // _onKey – physical keyboard
   // ─────────────────────────────────────────────────────────────
   _onKey(event) {
@@ -197,8 +147,6 @@ class MathScene extends Phaser.Scene {
       this._handleInput('←');
     } else if (key === 'Enter') {
       this._handleInput('OK');
-    } else if (key === 'q' || key === 'Q' || key === '5') {
-      this._activateShield();
     }
   }
 
