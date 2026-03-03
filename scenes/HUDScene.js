@@ -233,7 +233,6 @@ class HUDScene extends Phaser.Scene {
   // shutdown
   // ─────────────────────────────────────────────────────────────
   shutdown() {
-    console.log('[HUDScene] shutdown called');
     EventBus.off('PLAYER_HP_CHANGED', this._updateHP,         this);
     EventBus.off('INVENTORY_CHANGED', this._updateInventory,  this);
     EventBus.off('RELOAD_START',      this._onReloadStart,    this);

@@ -162,7 +162,6 @@ class LevelCompleteScene extends Phaser.Scene {
   }
 
   _goNext(isLastLevel) {
-    console.log('[LevelComplete] _goNext called, isLastLevel=', isLastLevel, '_going=', this._going);
     if (this._going) return;
     this._going = true;
 
@@ -173,13 +172,10 @@ class LevelCompleteScene extends Phaser.Scene {
     }
 
     if (isLastLevel) {
-      console.log('[LevelComplete] → MenuScene');
       this.scene.start('MenuScene');
     } else {
       LevelManager.nextLevel();
-      const nextId = LevelManager.currentLevelId;
-      console.log('[LevelComplete] → GameScene levelId=', nextId);
-      this.scene.start('GameScene', { levelId: nextId });
+      this.scene.start('GameScene', { levelId: LevelManager.currentLevelId });
     }
   }
 }
