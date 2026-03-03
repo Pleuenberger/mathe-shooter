@@ -32,7 +32,8 @@ window.MathSystem = {
 
   /**
    * Re-builds all three category pools from the currently active rows.
-   * Each entry is a unique "row × multiplier" pair (multiplier 1-10).
+   * Two-level priority: weakest rows first; within a row, weakest tasks first.
+   * Falls back to random order when no profile data is available.
    */
   _rebuildPools() {
     const categories = [
@@ -41,33 +42,47 @@ window.MathSystem = {
       CONSTANTS.CATEGORY_HARD,
     ];
 
+    const profile = ProfileSystem.getActive();
+    const stats = profile ? ProfileSystem.getMathStats(profile.id) : {};
+
     categories.forEach(cat => {
-      // Collect only active rows that belong to this category
       const catRows = CONSTANTS.CATEGORY_ROWS[cat];
       const rows = this._activeRows.filter(r => catRows.includes(r));
 
-      const problems = [];
-      rows.forEach(row => {
+      // Build per-row groups with per-task accuracy
+      const rowGroups = rows.map(row => {
+        const rowKey = String(row);
+        const probStats = (stats[rowKey] && stats[rowKey].problems) || {};
+
+        const group = [];
         for (let m = 1; m <= 10; m++) {
-          const key = `${row}x${m}`;
-          problems.push({
-            key,
-            a:        row,
-            b:        m,
-            answer:   row * m,
-            tableRow: row,
-            category: cat,
-          });
+          const probKey = `${row}x${m}`;
+          const ps  = probStats[probKey];
+          const acc = (ps && ps.attempts > 0) ? ps.correct / ps.attempts : 0;
+          group.push({ key: probKey, a: row, b: m, answer: row * m, tableRow: row, category: cat, _acc: acc });
         }
+
+        // Level 2: worst accuracy within row first; ties broken randomly
+        group.sort((a, b) => {
+          if (a._acc !== b._acc) return a._acc - b._acc;
+          return Math.random() - 0.5;
+        });
+
+        const rowMastery = profile ? this.getMasteryScore(row, profile.id) : 0;
+        return { row, group, mastery: rowMastery };
       });
 
-      // Shuffle in place (Fisher-Yates)
-      for (let i = problems.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [problems[i], problems[j]] = [problems[j], problems[i]];
-      }
+      // Level 1: weakest row first
+      rowGroups.sort((a, b) => a.mastery - b.mastery);
 
-      this._pools[cat] = problems;
+      this._pools[cat] = rowGroups.flatMap(rg => rg.group.map(item => ({
+        key:      item.key,
+        a:        item.a,
+        b:        item.b,
+        answer:   item.answer,
+        tableRow: item.tableRow,
+        category: item.category,
+      })));
       this._used[cat].clear();
     });
   },
@@ -186,16 +201,17 @@ window.MathSystem = {
   /**
    * Records a math answer in the active profile's stats.
    * Also maintains a recentHistory array (capped at 10 entries) per row
-   * for trend analysis.
+   * for trend analysis, and per-task tracking under stats[row].problems.
    *
-   * @param {number}  tableRow  The multiplication table row (1-10)
+   * @param {{ a: number, b: number, answer: number, tableRow: number, category: string }} problem
    * @param {boolean} correct   Whether the answer was correct
    * @param {number}  timeMs    Time taken to answer in milliseconds
    */
-  recordAnswer(tableRow, correct, timeMs) {
+  recordAnswer(problem, correct, timeMs) {
     const profile = ProfileSystem.getActive();
     if (!profile) return;
 
+    const tableRow = problem.tableRow;
     const stats = ProfileSystem.getMathStats(profile.id);
     const key   = String(tableRow);
 
@@ -220,6 +236,14 @@ window.MathSystem = {
     if (row.recentHistory.length > 10) {
       row.recentHistory.shift();
     }
+
+    // Per-task tracking
+    row.problems = row.problems || {};
+    const probKey = `${problem.a}x${problem.b}`;
+    row.problems[probKey] = row.problems[probKey] || { attempts: 0, correct: 0, totalTimeMs: 0 };
+    row.problems[probKey].attempts    += 1;
+    row.problems[probKey].correct     += correct ? 1 : 0;
+    row.problems[probKey].totalTimeMs += timeMs;
 
     ProfileSystem.saveMathStats(profile.id, stats);
   },

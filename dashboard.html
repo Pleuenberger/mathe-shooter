@@ -356,18 +356,64 @@
     .trend-flat  { color: var(--text-muted); }
 
     /* Row hover highlight */
-    .rows-table tbody tr {
+    .rows-table tbody tr:not(.prob-detail-row) {
       background: rgba(255,255,255,0.03);
       border-radius: var(--radius-sm);
       transition: background .15s;
     }
 
-    .rows-table tbody tr:hover {
+    .rows-table tbody tr:not(.prob-detail-row):hover {
       background: rgba(124, 77, 255, 0.12);
     }
 
-    .rows-table tbody tr td:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
-    .rows-table tbody tr td:last-child  { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+    .rows-table tbody tr:not(.prob-detail-row) td:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+    .rows-table tbody tr:not(.prob-detail-row) td:last-child  { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+
+    /* ================================================================
+       TOGGLE BUTTON
+       ================================================================ */
+    .toggle-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 1px 6px;
+      margin-left: 6px;
+      vertical-align: middle;
+      transition: color .15s, border-color .15s;
+    }
+    .toggle-btn:hover { color: var(--text-main); border-color: rgba(255,255,255,0.5); }
+
+    /* ================================================================
+       PER-TASK DETAIL GRID
+       ================================================================ */
+    .prob-detail-row td {
+      padding: 2px 8px 12px;
+      background: rgba(0,0,0,0.15);
+    }
+
+    .prob-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 16px;
+      padding: 8px 4px 4px;
+    }
+
+    .prob-col { display: flex; flex-direction: column; gap: 4px; }
+
+    .prob-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 6px;
+      font-size: 0.88rem;
+    }
+
+    .prob-label { font-weight: 700; color: var(--text-main); min-width: 52px; }
 
     /* ================================================================
        PARENT RECOMMENDATION BOX
@@ -739,7 +785,10 @@
 
         var tr = document.createElement('tr');
         tr.innerHTML =
-          '<td class="row-name">' + r + 'er Reihe</td>' +
+          '<td class="row-name">' + r + 'er Reihe' +
+            '<button class="toggle-btn" id="toggle-btn-' + r + '" ' +
+              'onclick="toggleRowDetail(' + r + ')" title="Aufgaben details">▼</button>' +
+          '</td>' +
           '<td class="bar-cell">' +
             '<div class="bar-track">' +
               '<div class="bar-fill js-row-bar" data-pct="' + pct + '" ' +
@@ -751,6 +800,14 @@
           '<td class="trend-cell"><div class="trend-symbols">' + trendSymbols + arrowHtml + '</div></td>';
 
         rowsTbody.appendChild(tr);
+
+        // Hidden detail row (lazy-loaded on first expand)
+        var detailTr = document.createElement('tr');
+        detailTr.id        = 'detail-row-' + r;
+        detailTr.className = 'prob-detail-row';
+        detailTr.style.display = 'none';
+        detailTr.innerHTML = '<td colspan="5"></td>';
+        rowsTbody.appendChild(detailTr);
       }
 
       // Animate bars on next tick
@@ -792,6 +849,30 @@
         parseInt(result[3], 16) + ',' +
         alpha + ')';
     }
+
+    // ----------------------------------------------------------------
+    // Toggle per-task detail row (exposed globally for onclick handlers)
+    // ----------------------------------------------------------------
+    window.toggleRowDetail = function (row) {
+      var detailRow = document.getElementById('detail-row-' + row);
+      var btn       = document.getElementById('toggle-btn-' + row);
+      if (!detailRow) return;
+
+      if (detailRow.style.display === 'none') {
+        // Lazy-load content on first open
+        if (!detailRow.dataset.loaded) {
+          var profileId = selectEl.value;
+          detailRow.querySelector('td').innerHTML =
+            Analytics.renderRowDetails(row, profileId);
+          detailRow.dataset.loaded = '1';
+        }
+        detailRow.style.display = '';
+        if (btn) btn.textContent = '▲';
+      } else {
+        detailRow.style.display = 'none';
+        if (btn) btn.textContent = '▼';
+      }
+    };
 
     // ----------------------------------------------------------------
     // Event: profile selection changes

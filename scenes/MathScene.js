@@ -183,7 +183,7 @@ class MathScene extends Phaser.Scene {
 
     // Record result in MathSystem
     if (typeof MathSystem.recordAnswer === 'function') {
-      MathSystem.recordAnswer(this.problem.tableRow, correct, timeMs);
+      MathSystem.recordAnswer(this.problem, correct, timeMs);
     }
 
     // Play audio feedback
@@ -194,24 +194,37 @@ class MathScene extends Phaser.Scene {
     }
 
     // Feedback text
-    let feedbackStr;
     if (correct) {
+      let feedbackStr;
       if      (timeMs < 2000) feedbackStr = `RICHTIG! +${CONSTANTS.HP_REGEN_FAST} HP`;
       else if (timeMs < 3000) feedbackStr = `RICHTIG! +${CONSTANTS.HP_REGEN_MED} HP`;
       else if (timeMs < 4000) feedbackStr = `RICHTIG! +${CONSTANTS.HP_REGEN_SLOW} HP`;
       else                    feedbackStr = 'RICHTIG!';
+
+      this.add.text(480, 238, feedbackStr, {
+        fontSize: '28px',
+        fill: '#44ff44',
+        stroke: '#000',
+        strokeThickness: 4,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(95);
     } else {
-      feedbackStr = this._answer.length > 0 ? 'FALSCH!' : 'ZEIT!';
+      const mainStr    = this._answer.length > 0 ? 'FALSCH!' : 'ZEIT!';
+      const correctStr = `${this.problem.a} × ${this.problem.b} = ${this.problem.answer}`;
+
+      this.add.text(480, 228, mainStr, {
+        fontSize: '28px',
+        fill: '#ff4444',
+        stroke: '#000',
+        strokeThickness: 4,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(95);
+
+      this.add.text(480, 258, correctStr, {
+        fontSize: '20px',
+        fill: '#ff8800',
+        stroke: '#000',
+        strokeThickness: 3,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(95);
     }
-
-    const feedbackColor = correct ? '#44ff44' : '#ff4444';
-
-    this.add.text(480, 238, feedbackStr, {
-      fontSize: '28px',
-      fill: feedbackColor,
-      stroke: '#000',
-      strokeThickness: 4,
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(95);
 
     // Emit result and close scene after short delay
     this.time.delayedCall(800, () => {

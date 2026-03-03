@@ -262,6 +262,58 @@ window.Analytics = {
   },
 
   // ------------------------------------------------------------------
+  // Per-task detail grid (used by dashboard dropdown)
+  // ------------------------------------------------------------------
+
+  /**
+   * Returns an HTML string containing a 2-column × 5-row grid showing
+   * accuracy per individual task (row × 1 … row × 10).
+   *
+   * @param {number} row        Multiplication table row (1-10)
+   * @param {string} profileId
+   * @returns {string}  HTML
+   */
+  renderRowDetails(row, profileId) {
+    const profiles = this.getProfiles();
+    const profile  = profiles.find(function (p) { return p.id === profileId; });
+    const rowStats = (profile && profile.mathStats && profile.mathStats[String(row)]) || null;
+    const probStats = (rowStats && rowStats.problems) || {};
+
+    var cells = [];
+    for (var m = 1; m <= 10; m++) {
+      var probKey = row + 'x' + m;
+      var ps = probStats[probKey];
+      var cellHtml;
+      if (!ps || ps.attempts === 0) {
+        cellHtml =
+          '<div class="prob-cell">' +
+          '<span class="prob-label">' + row + ' × ' + m + '</span>' +
+          '<span style="color:#888888">❓ —</span>' +
+          '</div>';
+      } else {
+        var acc   = ps.correct / ps.attempts;
+        var pct   = Math.round(acc * 100);
+        var level = this.getScoreLevel(acc);
+        var emoji = level.label.split(' ').pop();
+        cellHtml =
+          '<div class="prob-cell">' +
+          '<span class="prob-label">' + row + ' × ' + m + '</span>' +
+          '<span style="color:' + level.color + ';font-weight:700;">' + pct + '%</span>' +
+          '<span>' + emoji + '</span>' +
+          '</div>';
+      }
+      cells.push(cellHtml);
+    }
+
+    return (
+      '<div class="prob-grid">' +
+      '<div class="prob-col">' + cells.slice(0, 5).join('') + '</div>' +
+      '<div class="prob-col">' + cells.slice(5, 10).join('') + '</div>' +
+      '</div>'
+    );
+  },
+
+  // ------------------------------------------------------------------
   // Formatting helpers
   // ------------------------------------------------------------------
 
