@@ -9,12 +9,15 @@ class GameScene extends Phaser.Scene {
   }
 
   init(data) {
+    console.log('[GameScene] init, data=', data);
     this.levelId       = data.levelId || LevelManager.currentLevelId;
     LevelManager.setLevel(this.levelId);
     this._levelConfig  = LevelManager.getCurrent();
+    console.log('[GameScene] init done, levelId=', this.levelId, 'config=', !!this._levelConfig);
   }
 
   create() {
+    console.log('[GameScene] create start, levelId=', this.levelId);
     // Reset stale per-run reference so getEnemyGroup() creates a fresh group
     // for this scene instance.  Without this, the second level run reuses the
     // destroyed group from the previous scene and crashes silently.
@@ -109,12 +112,18 @@ class GameScene extends Phaser.Scene {
     });
 
     // 13. Physics colliders
-    this._setupColliders();
+    try {
+      this._setupColliders();
+      console.log('[GameScene] _setupColliders OK');
+    } catch (e) {
+      console.error('[GameScene] _setupColliders FAILED:', e);
+    }
 
     // 14. EventBus listeners
     this._setupEventListeners();
 
     // 15. HUD scene (parallel)
+    console.log('[GameScene] launching HUDScene');
     this.scene.launch('HUDScene');
 
     // 16. Level stats tracking
@@ -144,6 +153,8 @@ class GameScene extends Phaser.Scene {
     // Track second half damage
     EventBus.on('PLAYER_HP_CHANGED', this._trackSecondHalfDamage, this);
     EventBus.on('SHIELD_ACTIVATED',  this._onShieldActivated,     this);
+
+    console.log('[GameScene] create COMPLETE, levelId=', this.levelId);
   }
 
   // ─────────────────────────────────────────────────────────────
