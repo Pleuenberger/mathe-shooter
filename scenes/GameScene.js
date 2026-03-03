@@ -342,6 +342,24 @@ class GameScene extends Phaser.Scene {
       this._playerTouchBoss, null, this
     );
 
+    // Spawn shield items before the boss area so the player can pick them up
+    const shieldY = Math.min(bp.y - 10, 460);
+    const woodShield = new ShieldItem(this, bp.x - 600, shieldY, {
+      id: 'wood_shield',
+      name: 'Holzschild',
+      protection: 0.5,
+    });
+    this.shieldItems.push(woodShield);
+
+    if (this.levelId >= 5) {
+      const steelShield = new ShieldItem(this, bp.x - 350, shieldY, {
+        id: 'steel_shield',
+        name: 'Stahlschild',
+        protection: 0.75,
+      });
+      this.shieldItems.push(steelShield);
+    }
+
     // Boss announcement banner
     const bossText = this.add.text(480, 200, '⚠ BOSS ⚠', {
       fontSize: '40px',

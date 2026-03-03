@@ -141,6 +141,7 @@ class LevelCompleteScene extends Phaser.Scene {
     menuBtn.on('pointerdown', () => this.scene.start('MenuScene'));
 
     // ── Auto-advance after 8s ─────────────────────────────────────
+    this._going = false;
     this._autoTimer = this.time.delayedCall(8000, () => {
       this._goNext(isLastLevel);
     });
@@ -161,6 +162,15 @@ class LevelCompleteScene extends Phaser.Scene {
   }
 
   _goNext(isLastLevel) {
+    if (this._going) return;
+    this._going = true;
+
+    // Cancel the auto-advance timer so it doesn't fire after manual click
+    if (this._autoTimer) {
+      this._autoTimer.remove(false);
+      this._autoTimer = null;
+    }
+
     if (isLastLevel) {
       this.scene.start('MenuScene');
     } else {
