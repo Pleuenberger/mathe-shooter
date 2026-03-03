@@ -120,6 +120,7 @@ class HUDScene extends Phaser.Scene {
   // HP 150 → 1 full, 1 half, 1 empty
   // ─────────────────────────────────────────────────────────────
   _updateHP(hp, maxHp) {
+    if (!this.sys || !this.sys.isActive()) return;
     // Each heart covers 100 HP.  Heart i covers range [i*100, (i+1)*100].
     // Displayed in reverse: heart[0] = 200-300, heart[1] = 100-200, heart[2] = 0-100
     for (let i = 0; i < 3; i++) {
@@ -149,6 +150,7 @@ class HUDScene extends Phaser.Scene {
   // _updateInventory
   // ─────────────────────────────────────────────────────────────
   _updateInventory(slots) {
+    if (!this.sys || !this.sys.isActive()) return;
     for (let i = 0; i < 4; i++) {
       const weapon = slots[i];
       if (weapon) {
@@ -187,6 +189,7 @@ class HUDScene extends Phaser.Scene {
   // _onReloadStart
   // ─────────────────────────────────────────────────────────────
   _onReloadStart(data) {
+    if (!this.sys || !this.sys.isActive()) return;
     this._reloadDuration = data.duration;
     this._reloadStart    = Date.now();
     this.reloadBg.setVisible(true);
@@ -199,6 +202,7 @@ class HUDScene extends Phaser.Scene {
   // _onReloadComplete
   // ─────────────────────────────────────────────────────────────
   _onReloadComplete() {
+    if (!this.sys || !this.sys.isActive()) return;
     this.reloadBg.setVisible(false);
     this.reloadBar.setVisible(false);
     this.reloadText.setVisible(false);
@@ -209,6 +213,7 @@ class HUDScene extends Phaser.Scene {
   // _onEnemyKilled
   // ─────────────────────────────────────────────────────────────
   _onEnemyKilled(data) {
+    if (!this.sys || !this.sys.isActive()) return;
     this._score += (data && data.points) ? data.points : 10;
     this.scoreText.setText(`Punkte: ${this._score}`);
   }
@@ -228,6 +233,7 @@ class HUDScene extends Phaser.Scene {
   // shutdown
   // ─────────────────────────────────────────────────────────────
   shutdown() {
+    console.log('[HUDScene] shutdown called');
     EventBus.off('PLAYER_HP_CHANGED', this._updateHP,         this);
     EventBus.off('INVENTORY_CHANGED', this._updateInventory,  this);
     EventBus.off('RELOAD_START',      this._onReloadStart,    this);
