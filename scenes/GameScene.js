@@ -24,13 +24,6 @@ class GameScene extends Phaser.Scene {
     MathSystem.initForLevel(this._levelConfig);
     InventorySystem.init();
 
-    // Load best weapon from profile
-    const profile = ProfileSystem.getActive();
-    if (profile && profile.bestWeapon && profile.bestWeapon !== 'club') {
-      const w = WEAPONS[profile.bestWeapon];
-      if (w) InventorySystem.pickUpWeapon({ ...w });
-    }
-
     // 2. World setup
     this.physics.world.setBounds(0, 0, this._levelConfig.worldWidth, 540);
 
@@ -571,9 +564,6 @@ class GameScene extends Phaser.Scene {
     const profile = ProfileSystem.getActive();
     if (profile) {
       ProfileSystem.saveLevelStars(profile.id, this.levelId, stars);
-
-      const best = InventorySystem.getBestWeapon();
-      if (best) ProfileSystem.saveBestWeapon(profile.id, best.id);
 
       const nextLevel = Math.min(10, this.levelId + 1);
       ProfileSystem.setCurrentLevel(profile.id, nextLevel);

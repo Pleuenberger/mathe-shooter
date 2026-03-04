@@ -23,7 +23,7 @@ window.InventorySystem = {
    * Call at the start of every level.
    */
   init() {
-    this.slots      = [{ ...WEAPONS.club }, null, null, null];
+    this.slots      = [null, null, null, null];
     this.activeSlot = 0;
     this.shieldSlot = null;
     this.reloadTimers = {};
@@ -184,24 +184,14 @@ window.InventorySystem = {
   },
 
   /**
-   * Carry the best non-club weapon into the next level.
-   * Resets to club-only first, then puts the best weapon in slot 1.
-   * Shield is always cleared between levels.
+   * Reset inventory completely for the next level — no carry-over.
+   * Player starts the new level without any weapon and must find chests.
    */
   prepareForNextLevel() {
-    const best = this.getBestWeapon();
-
-    this.slots      = [{ ...WEAPONS.club }, null, null, null];
-    this.shieldSlot = null;
+    this.slots        = [null, null, null, null];
+    this.activeSlot   = 0;
+    this.shieldSlot   = null;
     this.reloadTimers = {};
-
-    if (best && best.id !== 'club') {
-      this.slots[1] = { ...best };
-      this.activeSlot = 1;
-    } else {
-      this.activeSlot = 0;
-    }
-
     EventBus.emit('INVENTORY_CHANGED', this.slots);
   },
 

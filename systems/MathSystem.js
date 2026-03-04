@@ -285,6 +285,25 @@ window.MathSystem = {
   },
 
   /**
+   * Returns the time limit in ms for a single problem, based on the mastery
+   * score of its table row. Steps: 15 000 / 13 000 / 11 000 / 9 000 / 7 000 / 5 000.
+   * Falls back to the global CONSTANTS.MATH_TIME_LIMIT if no profile is active.
+   *
+   * @param {number} tableRow
+   * @param {string} profileId
+   * @returns {number} ms
+   */
+  getTimeLimitForRow(tableRow, profileId) {
+    const score = this.getMasteryScore(tableRow, profileId);
+    if (score === 0)    return 15000;
+    if (score < 0.20)  return 13000;
+    if (score < 0.40)  return 11000;
+    if (score < 0.60)  return  9000;
+    if (score < 0.80)  return  7000;
+    return 5000;
+  },
+
+  /**
    * Returns the row number (1-10) with the lowest mastery score
    * for the given profile.  Useful for recommending which row to practise.
    * @param {string} profileId

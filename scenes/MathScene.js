@@ -83,7 +83,10 @@ class MathScene extends Phaser.Scene {
 
     // ── Timer state ───────────────────────────────────────────────
     this._startTime = Date.now();
-    this._timeLimit = CONSTANTS.MATH_TIME_LIMIT || 5000;
+    const _profile  = ProfileSystem.getActive();
+    this._timeLimit = _profile
+      ? MathSystem.getTimeLimitForRow(this.problem.tableRow, _profile.id)
+      : (CONSTANTS.MATH_TIME_LIMIT || 5000);
     this._answered  = false;
   }
 
@@ -92,14 +95,14 @@ class MathScene extends Phaser.Scene {
   //   7  8  9
   //   4  5  6
   //   1  2  3
-  //   ← 0  OK
+  //   ←  0
   // ─────────────────────────────────────────────────────────────
   _buildNumpad() {
     const layout = [
       [7, 8, 9],
       [4, 5, 6],
       [1, 2, 3],
-      ['←', 0, 'OK'],
+      ['←', 0],
     ];
     const startX = 345;
     const startY = 308;
@@ -113,23 +116,19 @@ class MathScene extends Phaser.Scene {
         const bx = startX + ci * (btnW + gapX);
         const by = startY + ri * (btnH + gapY);
 
-        const isOK    = val === 'OK';
-        const baseCol = isOK ? 0x44aa44 : 0x2a3a5a;
-        const hoverCol = isOK ? 0x55cc55 : 0x3a4a7a;
-
-        const btn = this.add.rectangle(bx, by, btnW, btnH, baseCol)
+        const btn = this.add.rectangle(bx, by, btnW, btnH, 0x2a3a5a)
           .setScrollFactor(0).setDepth(92).setInteractive({ useHandCursor: true });
 
         this.add.text(bx, by, String(val), {
-          fontSize: isOK ? '18px' : '22px',
+          fontSize: '22px',
           fill: '#ffffff',
           stroke: '#000',
           strokeThickness: 2,
         }).setOrigin(0.5).setScrollFactor(0).setDepth(93);
 
         btn.on('pointerdown', () => this._handleInput(val));
-        btn.on('pointerover', () => btn.setFillStyle(hoverCol));
-        btn.on('pointerout',  () => btn.setFillStyle(baseCol));
+        btn.on('pointerover', () => btn.setFillStyle(0x3a4a7a));
+        btn.on('pointerout',  () => btn.setFillStyle(0x2a3a5a));
       });
     });
   }
@@ -145,8 +144,6 @@ class MathScene extends Phaser.Scene {
       this._handleInput(parseInt(key, 10));
     } else if (key === 'Backspace' || key === 'Delete') {
       this._handleInput('←');
-    } else if (key === 'Enter') {
-      this._handleInput('OK');
     }
   }
 
@@ -158,12 +155,16 @@ class MathScene extends Phaser.Scene {
 
     if (val === '←') {
       this._answer = this._answer.slice(0, -1);
-    } else if (val === 'OK') {
-      this._submit();
-      return;
     } else {
+      // val is a digit (OK no longer exists)
       if (this._answer.length < 3) {
         this._answer += String(val);
+      }
+      // Auto-submit when input matches correct answer
+      if (parseInt(this._answer, 10) === this.problem.answer) {
+        this.answerText.setText(this._answer);
+        this._submit();
+        return;
       }
     }
 
@@ -196,10 +197,11 @@ class MathScene extends Phaser.Scene {
     // Feedback text
     if (correct) {
       let feedbackStr;
-      if      (timeMs < 2000) feedbackStr = `RICHTIG! +${CONSTANTS.HP_REGEN_FAST} HP`;
-      else if (timeMs < 3000) feedbackStr = `RICHTIG! +${CONSTANTS.HP_REGEN_MED} HP`;
-      else if (timeMs < 4000) feedbackStr = `RICHTIG! +${CONSTANTS.HP_REGEN_SLOW} HP`;
-      else                    feedbackStr = 'RICHTIG!';
+      const t = this._timeLimit;
+      if      (timeMs < t * 0.40) feedbackStr = `RICHTIG! +${CONSTANTS.HP_REGEN_FAST} HP`;
+      else if (timeMs < t * 0.60) feedbackStr = `RICHTIG! +${CONSTANTS.HP_REGEN_MED} HP`;
+      else if (timeMs < t * 0.80) feedbackStr = `RICHTIG! +${CONSTANTS.HP_REGEN_SLOW} HP`;
+      else                        feedbackStr = 'RICHTIG!';
 
       this.add.text(480, 238, feedbackStr, {
         fontSize: '28px',
