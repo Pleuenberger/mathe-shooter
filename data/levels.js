@@ -77,6 +77,7 @@ window.LEVELS = [
     bossPosition: { x: 3200, y: 400 },
     bossHp: 15,
     playerStart: { x: 100, y: 450 },
+    walls: [{x:1100,height:3},{x:2300,height:3}],
   },
   {
     id: 3,
@@ -136,6 +137,7 @@ window.LEVELS = [
     bossPosition: { x: 3700, y: 400 },
     bossHp: 25,
     playerStart: { x: 100, y: 450 },
+    walls: [{x:900,height:4},{x:1900,height:4},{x:2900,height:4}],
   },
   {
     id: 5,
@@ -198,6 +200,7 @@ window.LEVELS = [
     bossHp: 40,
     playerStart: { x: 100, y: 450 },
     darkEffect: true,
+    walls: [{x:800,height:5},{x:1700,height:5},{x:2600,height:5},{x:3500,height:5}],
   },
   {
     id: 7,
@@ -330,3 +333,5 @@ window.LEVELS = [
     masteryRequired: true,
   },
 ];
+
+

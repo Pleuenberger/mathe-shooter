@@ -21,6 +21,6 @@ class BootScene extends Phaser.Scene {
 
   create() {
     // AudioSystem is lazy-initialised on first user gesture (see game.js)
-    this.scene.start('ProfileScene');
+    this.scene.start('HomeScene');
   }
 }

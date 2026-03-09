@@ -45,7 +45,7 @@ class WeaponItem extends Phaser.GameObjects.Container {
     this.glow   = scene.add.circle(0, 0, 15, color, 0.30);
 
     // Weapon sprite (tier-keyed texture from GraphicsFactory)
-    const texKey = 'weapon_item_t' + (tier <= 3 ? tier : 1);
+    const wid = this.weaponData && this.weaponData.id; const idKey = 'weapon_item_' + wid; const texKey = (wid && this.scene.textures.exists(idKey)) ? idKey : ('weapon_item_t' + (tier <= 3 ? tier : 1));
     this.sprite  = scene.add.image(0, 0, texKey);
 
     // Hint text (shown when player is nearby)
@@ -149,3 +149,4 @@ class WeaponItem extends Phaser.GameObjects.Container {
     this.destroy();
   }
 }
+

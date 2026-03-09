@@ -49,6 +49,7 @@ const config = {
   },
   scene: [
     BootScene,
+    HomeScene,
     ProfileScene,
     MenuScene,
     GameScene,

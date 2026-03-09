@@ -33,6 +33,16 @@ class GameScene extends Phaser.Scene {
     // 4. Platforms
     this.platforms = PlatformFactory.createGroup(this, this._levelConfig);
 
+    // 4b. Walls
+    this.wallsGroup = this.physics.add.staticGroup();
+    if (this._levelConfig.walls) {
+      this._levelConfig.walls.forEach(w => {
+        for (let i = 0; i < w.height; i++) {
+          this.wallsGroup.create(w.x + 16, 524 - i * 32 - 16, 'wall_stone_tile');
+        }
+      });
+    }
+
     // 5. Player
     const start = this._levelConfig.playerStart;
     this.player = new Player(this, start.x, start.y);
@@ -143,25 +153,36 @@ class GameScene extends Phaser.Scene {
   // _createBackground
   // ─────────────────────────────────────────────────────────────
   _createBackground() {
-    // Sky / level-colour fill
-    this.add.rectangle(
-      this._levelConfig.worldWidth / 2, 270,
-      this._levelConfig.worldWidth, 540,
-      this._levelConfig.bgColor || 0x87CEEB
-    ).setDepth(-10);
-
-    // Scattered clouds
-    for (let i = 0; i < 8; i++) {
-      const cx = Phaser.Math.Between(100, this._levelConfig.worldWidth - 100);
-      const cy = Phaser.Math.Between(50, 200);
-      this.add.image(cx, cy, 'cloud').setAlpha(0.8).setDepth(-9);
+    const worldWidth = this._levelConfig.worldWidth;
+    const theme = this._levelConfig.theme || 'meadow';
+    const THEME_BG = {
+      meadow:    'bg_meadow',
+      forest:    'bg_forest',
+      courtyard: 'bg_courtyard',
+      garden:    'bg_garden',
+      dungeon:   'bg_dungeon',
+      tower:     'bg_tower',
+      rooftop:   'bg_rooftop',
+      wizard:    'bg_wizard',
+      throne:    'bg_throne',
+    };
+    const bgKey = THEME_BG[theme] || 'bg_meadow';
+    if (this.textures.exists(bgKey)) {
+      this.add.tileSprite(worldWidth / 2, 270, worldWidth, 540, bgKey).setDepth(-10);
+    } else {
+      this.add.rectangle(
+        worldWidth / 2, 270, worldWidth, 540,
+        this._levelConfig.bgColor || 0x87CEEB
+      ).setDepth(-10);
+      for (let i = 0; i < 8; i++) {
+        const cx = Phaser.Math.Between(100, worldWidth - 100);
+        const cy = Phaser.Math.Between(50, 200);
+        this.add.image(cx, cy, 'cloud').setAlpha(0.8).setDepth(-9);
+      }
     }
-
-    // Dark overlay for dungeon levels
     if (this._levelConfig.darkEffect) {
       this.add.rectangle(
-        this._levelConfig.worldWidth / 2, 270,
-        this._levelConfig.worldWidth, 540,
+        worldWidth / 2, 270, worldWidth, 540,
         0x000000, 0.4
       ).setDepth(-8);
     }
@@ -200,6 +221,16 @@ class GameScene extends Phaser.Scene {
       this.player, this.checkpoints,
       this._activateCheckpoint, null, this
     );
+
+    // Walls colliders
+    if (this.wallsGroup) {
+      this.physics.add.collider(this.player, this.wallsGroup);
+      this.physics.add.collider(this.getEnemyGroup(), this.wallsGroup);
+      this.physics.add.collider(
+        BulletPool.getGroup(), this.wallsGroup,
+        (bullet) => { bullet.destroy(); }, null, this
+      );
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
